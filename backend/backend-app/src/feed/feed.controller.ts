@@ -1,18 +1,50 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FeedService } from './feed.service';
+import { FileUploadInterceptor } from './interceptors/file-upload.interceptor';
+import { CreatePostDto } from './dto/create-post.dto';
 
 @Controller('feed')
 export class FeedController {
   constructor(private readonly feedService: FeedService) {}
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'posts'),
+      filename: (req, file, cb) => {
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+      },
+    }),
+  }))
+  @UseInterceptors(FileUploadInterceptor)
   @Post('posts')
-  async createPost(@Request() req, @Body() body: { content: string; imageUrl?: string }) {
-    console.log(req.user.id);
-    console.log(body.content);
-    console.log(body.imageUrl);
-    return await this.feedService.createPost(req.user.id, body.content, body.imageUrl);
+  async createPost(
+    @Request() req,
+    @Body() body: { content: string },
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const imageUrl = file ? `/uploads/posts/${file.filename}` : null;
+    return await this.feedService.createPost(req.user.id, body.content, imageUrl);
   }
 
   @UseGuards(JwtAuthGuard)

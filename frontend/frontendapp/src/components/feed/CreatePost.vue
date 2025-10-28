@@ -83,40 +83,19 @@ export default {
     async createPost() {
       this.loading = true;
       try {
-        let imageUrl = '';
-
-        // If an image is selected, convert it to base64 and include it
+        const formData = new FormData();
+        formData.append('content', this.content);
+        
         if (this.selectedImage) {
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            imageUrl = reader.result;
-            await this.submitPost(imageUrl);
-          };
-          reader.readAsDataURL(this.selectedImage);
-        } else {
-          await this.submitPost(imageUrl);
+          formData.append('image', this.selectedImage);
         }
-      } catch (error) {
-        console.error('Post creation error:', error);
-        // eslint-disable-next-line no-undef
-        toastr.error('Network error. Please try again.', 'Error');
-        this.loading = false;
-      }
-    },
-    async submitPost(imageUrl) {
-      try {
-        const postData = {
-          content: this.content,
-          imageUrl: imageUrl || null,
-        };
         
         const response = await fetch('http://localhost:3000/feed/posts', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify(postData),
+          body: formData,
         });
 
         if (response.ok) {

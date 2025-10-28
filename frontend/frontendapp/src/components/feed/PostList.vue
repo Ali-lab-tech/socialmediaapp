@@ -59,7 +59,7 @@
         <div class="post-content">
           <p class="mb-2">{{ post.content }}</p>
           <div v-if="post.imageUrl" class="post-image mb-2">
-            <img :src="post.imageUrl" alt="Post image" class="img-fluid rounded" />
+            <img :src="getImageUrl(post.imageUrl)" alt="Post image" class="img-fluid rounded" />
           </div>
         </div>
       </div>
@@ -107,6 +107,15 @@ export default {
     this.loadCurrentUser();
   },
   methods: {
+    getImageUrl(imageUrl) {
+      if (!imageUrl) return '';
+      // If imageUrl already includes http://, return as is
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
+      }
+      // Otherwise, prepend the backend URL
+      return `http://localhost:3000${imageUrl}`;
+    },
     async loadCurrentUser() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
