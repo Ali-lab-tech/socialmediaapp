@@ -42,7 +42,7 @@ export class FeedService {
     return post;
   }
 
-  async updatePost(postId: number, userId: number, content: string): Promise<Post> {
+  async updatePost(postId: number, userId: number, content: string, imageUrl?: string): Promise<Post> {
     const post = await this.postRepository.findOne({
       where: { id: postId },
     });
@@ -56,6 +56,9 @@ export class FeedService {
     }
 
     post.content = content;
+    if (imageUrl !== undefined) {
+      post.imageUrl = imageUrl;
+    }
     return await this.postRepository.save(post);
   }
 

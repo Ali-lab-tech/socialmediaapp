@@ -60,13 +60,35 @@ export class FeedController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'posts'),
+      filename: (req, file, cb) => {
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      // Accept image files
+      if (file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed!'), false);
+      }
+    },
+  }))
+  @UseInterceptors(FileUploadInterceptor)
   @Put('posts/:id')
   async updatePost(
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
-    @Body() body: { content: string },
+    @Body() body: { content: string; imageUrl?: string },
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return await this.feedService.updatePost(id, req.user.id, body.content);
+    const imageUrl = file ? `/uploads/posts/${file.filename}` : body.imageUrl;
+    return await this.feedService.updatePost(id, req.user.id, body.content, imageUrl);
   }
 
   @UseGuards(JwtAuthGuard)

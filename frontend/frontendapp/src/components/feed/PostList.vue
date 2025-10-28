@@ -76,9 +76,35 @@
           <div class="modal-body">
             <textarea
               v-model="editingPost.content"
-              class="form-control"
+              class="form-control mb-3"
               rows="4"
             ></textarea>
+            
+            <!-- Image Upload -->
+            <div class="mb-3">
+              <label class="form-label">Change Image (Optional)</label>
+              <input
+                type="file"
+                ref="editFileInput"
+                @change="handleEditFileSelect"
+                accept="image/*"
+                class="form-control"
+              />
+              <div v-if="editingPost.imagePreview" class="mt-2">
+                <img :src="editingPost.imagePreview" alt="Preview" class="img-thumbnail" style="max-height: 200px;" />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger ms-2"
+                  @click="removeEditImage"
+                >
+                  <i class="fas fa-times"></i> Remove
+                </button>
+              </div>
+              <div v-else-if="editingPost.currentImage" class="mt-2">
+                <label class="text-muted">Current Image:</label>
+                <img :src="getImageUrl(editingPost.currentImage)" alt="Current" class="img-thumbnail d-block" style="max-height: 200px;" />
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -99,7 +125,7 @@ export default {
       loading: true,
       error: null,
       currentUserId: null,
-      editingPost: { id: null, content: '' },
+      editingPost: { id: null, content: '', currentImage: null, selectedImage: null, imagePreview: '' },
     };
   },
   mounted() {
@@ -161,32 +187,69 @@ export default {
       return date.toLocaleDateString();
     },
     editPost(post) {
-      this.editingPost = { id: post.id, content: post.content };
+      this.editingPost = { 
+        id: post.id, 
+        content: post.content,
+        currentImage: post.imageUrl,
+        selectedImage: null,
+        imagePreview: ''
+      };
       // eslint-disable-next-line no-undef
       const modal = new bootstrap.Modal(document.getElementById('editPostModal'));
       modal.show();
     },
+    handleEditFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        this.editingPost.selectedImage = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.editingPost.imagePreview = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    removeEditImage() {
+      this.editingPost.selectedImage = null;
+      this.editingPost.imagePreview = '';
+      this.editingPost.currentImage = null;
+      if (this.$refs.editFileInput) {
+        this.$refs.editFileInput.value = '';
+      }
+    },
     async saveEdit() {
       try {
+        const formData = new FormData();
+        formData.append('content', this.editingPost.content);
+        
+        // If no new image selected and current image exists, keep current image
+        if (this.editingPost.selectedImage) {
+          formData.append('image', this.editingPost.selectedImage);
+        } else if (!this.editingPost.currentImage && this.editingPost.imagePreview === '') {
+          // User removed the image
+          formData.append('imageUrl', '');
+        }
+        
         const response = await fetch(`http://localhost:3000/feed/posts/${this.editingPost.id}`, {
           method: 'PUT',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
-          body: JSON.stringify({ content: this.editingPost.content }),
+          body: formData,
         });
 
         if (response.ok) {
           // eslint-disable-next-line no-undef
           toastr.success('Post updated successfully!', 'Success');
           this.loadPosts();
+          this.removeEditImage();
           // eslint-disable-next-line no-undef
           const modal = bootstrap.Modal.getInstance(document.getElementById('editPostModal'));
           modal.hide();
         } else {
+          const errorData = await response.json();
           // eslint-disable-next-line no-undef
-          toastr.error('Failed to update post', 'Error');
+          toastr.error(errorData.message || 'Failed to update post', 'Error');
         }
       } catch (error) {
         console.error('Post update error:', error);
