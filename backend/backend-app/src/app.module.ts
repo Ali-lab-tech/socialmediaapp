@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { FeedModule } from './feed/feed.module';
 import { User } from './auth/entities/user.entity';
+import { Post } from './feed/entities/post.entity';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { User } from './auth/entities/user.entity';
       username: 'root',
       password: '12345678', 
       database: 'social_media_db',
-      entities: [User],
+      entities: [User, Post],
       synchronize: true,
       logging: true,
       extra: {

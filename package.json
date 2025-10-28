@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev:backend": "cd backend/backendApp && npm run start",
+    "dev:backend": "cd backend/backend-app && npm run start:dev",
     "dev:frontend": "cd frontend/frontendapp && npm run serve",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""  
   },
