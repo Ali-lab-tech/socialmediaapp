@@ -62,6 +62,17 @@
             <img :src="getImageUrl(post.imageUrl)" alt="Post image" class="img-fluid rounded" />
           </div>
         </div>
+        
+        <div class="post-actions border-top pt-2 mt-2">
+          <button 
+            class="btn btn-sm" 
+            :class="isPostLiked(post.id) ? 'btn-primary' : 'btn-link text-muted'"
+            @click="toggleLike(post.id)"
+          >
+            <i :class="isPostLiked(post.id) ? 'fas fa-heart' : 'far fa-heart'" class="me-1"></i>
+            <span>{{ getLikesCount(post.id) }}</span>
+          </button>
+        </div>
       </div>
     </div>
     
@@ -126,6 +137,7 @@ export default {
       error: null,
       currentUserId: null,
       editingPost: { id: null, content: '', currentImage: null, selectedImage: null, imagePreview: '' },
+      userLikes: {}, // Track which posts user has liked
     };
   },
   mounted() {
@@ -161,6 +173,14 @@ export default {
 
         if (response.ok) {
           this.posts = await response.json();
+          // Track user likes
+          this.posts.forEach(post => {
+          if (post.likes && post.likes.length > 0) {
+            const userLiked = post.likes.some(like => like.userId === this.currentUserId);
+            this.userLikes[post.id] = userLiked; // Directly mutating the userLikes object
+          }
+        });
+
         } else {
           this.error = 'Failed to load posts. Please try again.';
         }
@@ -284,6 +304,45 @@ export default {
         toastr.error('Network error. Please try again.', 'Error');
       }
     },
+    isPostLiked(postId) {
+      return this.userLikes[postId] || false;
+    },
+    getLikesCount(postId) {
+      const post = this.posts.find(p => p.id === postId);
+      return post && post.likes ? post.likes.length : 0;
+    },
+    async toggleLike(postId) {
+      try {
+        const response = await fetch(`http://localhost:3000/feed/posts/${postId}/like`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // Update local state
+          this.userLikes[postId] = result.liked;  // Directly modify the userLikes object
+
+          // Update likes count in post
+          const post = this.posts.find(p => p.id === postId);
+          if (post) {
+            post.likes = result.liked 
+              ? [...(post.likes || []), { userId: this.currentUserId }]  // Add like if not already liked
+              : (post.likes || []).filter(like => like.userId !== this.currentUserId); // Remove like if already liked
+          }
+
+        } else {
+          // eslint-disable-next-line no-undef
+          toastr.error('Failed to toggle like', 'Error');
+        }
+      } catch (error) {
+        console.error('Like toggle error:', error);
+        // eslint-disable-next-line no-undef
+        toastr.error('Network error. Please try again.', 'Error');
+      }
+    },
   },
 };
 </script>
@@ -309,7 +368,48 @@ export default {
 }
 
 .card {
-  border: 1px solid #dee2e6;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid #4A90E2;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+  background: #FFFFFF;
+}
+
+.btn-primary {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: #357ABD;
+  border-color: #357ABD;
+}
+
+.btn-link:hover {
+  color: #4A90E2 !important;
+}
+
+.user-avatar i {
+  color: #4A90E2;
+}
+
+.post-actions .btn {
+  transition: all 0.2s;
+}
+
+.post-actions .btn:hover {
+  transform: translateY(-2px);
+}
+
+.modal-content {
+  border: 1px solid #4A90E2;
+}
+
+.btn-close {
+  filter: brightness(0);
+}
+
+.form-control:focus {
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 0.2rem rgba(43, 32, 37, 0.25);
 }
 </style>

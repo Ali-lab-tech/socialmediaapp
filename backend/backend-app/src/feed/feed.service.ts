@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/co
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
+import { Like } from './entities/like.entity';
 import { User } from '../auth/entities/user.entity';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class FeedService {
   constructor(
     @InjectRepository(Post)
     private postRepository: Repository<Post>,
+    @InjectRepository(Like)
+    private likeRepository: Repository<Like>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -25,7 +28,7 @@ export class FeedService {
   async getAllPosts(): Promise<Post[]> {
     return await this.postRepository.find({
       order: { createdAt: 'DESC' },
-      relations: ['user'],
+      relations: ['user', 'likes'],
     });
   }
 
@@ -82,7 +85,32 @@ export class FeedService {
     return await this.postRepository.find({
       where: { userId },
       order: { createdAt: 'DESC' },
-      relations: ['user'],
+      relations: ['user', 'likes'],
     });
+  }
+
+  async toggleLike(postId: number, userId: number): Promise<{ message: string; liked: boolean; likesCount: number }> {
+    const post = await this.postRepository.findOne({ where: { id: postId } });
+    
+    if (!post) {
+      throw new NotFoundException(`Post with ID ${postId} not found`);
+    }
+
+    const existingLike = await this.likeRepository.findOne({
+      where: { postId, userId },
+    });
+
+    if (existingLike) {
+      // Unlike
+      await this.likeRepository.remove(existingLike);
+      const likesCount = await this.likeRepository.count({ where: { postId } });
+      return { message: 'Post unliked', liked: false, likesCount };
+    } else {
+      // Like
+      const like = this.likeRepository.create({ postId, userId });
+      await this.likeRepository.save(like);
+      const likesCount = await this.likeRepository.count({ where: { postId } });
+      return { message: 'Post liked', liked: true, likesCount };
+    }
   }
 }

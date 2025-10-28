@@ -113,4 +113,10 @@ export class FeedController {
       user: req.user,
     };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:id/like')
+  async toggleLike(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return await this.feedService.toggleLike(id, req.user.id);
+  }
 }

@@ -128,15 +128,39 @@ export default {
 
 <style scoped>
 .card {
-  border: 1px solid #dee2e6;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 2px solid #4A90E2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #FFFFFF;
+}
+
+.btn-primary {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: #357ABD;
+  border-color: #357ABD;
 }
 
 .btn-outline-secondary {
-  border-color: #6c757d;
+  border-color: #4A90E2;
+  color: #4A90E2;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+  color: #FFFFFF;
 }
 
 .img-thumbnail {
-  border: 1px solid #dee2e6;
+  border: 1px solid #4A90E2;
+}
+
+.form-control:focus {
+  border-color: #4A90E2;
+  box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
 }
 </style>

@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { User } from '../../auth/entities/user.entity';
+import { Like } from './like.entity';
 
 @Entity('posts')
 export class Post {
@@ -18,6 +19,9 @@ export class Post {
 
   @Column()
   userId: number;
+
+  @OneToMany(() => Like, like => like.post, { cascade: true })
+  likes: Like[];
 
   @CreateDateColumn()
   createdAt: Date;

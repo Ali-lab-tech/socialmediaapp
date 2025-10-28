@@ -119,17 +119,54 @@ export default {
 </script>
 
 <style scoped>
+.navbar {
+  background: #4A90E2 !important;
+  border-bottom: 2px solid #FFFFFF;
+}
+
 .navbar-brand {
   font-weight: 600;
+  color: #FFFFFF !important;
 }
 
 .nav-link {
   font-weight: 500;
 }
 
+.navbar-toggler {
+  border-color: #4A90E2;
+}
+
+.btn-outline-primary {
+  border-color: #4A90E2;
+  color: #FFFFFF;
+}
+
+.btn-outline-primary:hover {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+  color: #FFFFFF;
+}
+
+.btn-primary {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover {
+  background-color: #357ABD;
+  border-color: #357ABD;
+}
+
+.dropdown-toggle {
+  color: #FFFFFF !important;
+}
+
 .dropdown-menu {
-  border: 1px solid #dee2e6;
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid #4A90E2;
+  box-shadow: 0 4px 8px rgba(43, 32, 37, 0.3);
+  background: #FFFFFF;
 }
 
 .dropdown-item {
@@ -137,7 +174,8 @@ export default {
 }
 
 .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: #4A90E2;
+  color: #FFFFFF;
 }
 
 .dropdown-item.text-danger:hover {
@@ -145,8 +183,10 @@ export default {
   color: #721c24 !important;
 }
 
-.dropdown-header {
-  font-weight: 600;
-  color: #495057;
+
+.fa-sign-in-alt,
+.fa-user-plus,
+.fa-user-circle {
+  color: #FFFFFF;
 }
 </style>

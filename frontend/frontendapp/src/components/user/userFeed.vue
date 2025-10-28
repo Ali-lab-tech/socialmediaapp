@@ -33,3 +33,11 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+
+
+.fa-home {
+  color: #4A90E2;
+}
+</style>

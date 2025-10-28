@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { FeedModule } from './feed/feed.module';
 import { User } from './auth/entities/user.entity';
 import { Post } from './feed/entities/post.entity';
+import { Like } from './feed/entities/like.entity';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { Post } from './feed/entities/post.entity';
       username: 'root',
       password: '12345678', 
       database: 'social_media_db',
-      entities: [User, Post],
+      entities: [User, Post, Like],
       synchronize: true,
       logging: true,
       extra: {
