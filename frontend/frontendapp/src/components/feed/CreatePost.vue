@@ -148,8 +148,9 @@ export default {
   padding: 2rem;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--border-color);
-  margin-bottom: 2rem;
+  margin-bottom: 0;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .create-post-card:hover {

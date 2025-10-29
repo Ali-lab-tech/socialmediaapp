@@ -49,4 +49,11 @@ export class AuthController {
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.authService.searchUsers(query || '', limitNum);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('activity')
+  async getUsersActivity(@Request() req, @Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    return this.authService.getUsersWithActivity(limitNum);
+  }
 }

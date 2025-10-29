@@ -54,6 +54,12 @@ export class FeedController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('posts/trending')
+  async getTrendingPosts() {
+    return await this.feedService.getTrendingPosts(10);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('posts/:id')
   async getPostById(@Param('id', ParseIntPipe) id: number) {
     return await this.feedService.getPostById(id);

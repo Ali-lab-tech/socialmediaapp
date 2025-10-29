@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity';
+import { Post } from '../feed/entities/post.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Post)
+    private postRepository: Repository<Post>,
     private jwtService: JwtService,
   ) {}
 
@@ -119,6 +122,45 @@ export class AuthService {
       return result;
     } catch (error) {
       console.error('Error in searchUsers:', error);
+      return [];
+    }
+  }
+
+  async getUsersWithActivity(limit: number = 50): Promise<Array<{ id: number; name: string; username: string; postCount: number }>> {
+    try {
+      // Get all users
+      const users = await this.userRepository.find({
+        take: limit * 2, // Get more users to filter by activity
+        order: { createdAt: 'DESC' },
+      });
+
+      // Get post counts for each user
+      const usersWithPosts = await Promise.all(
+        users.map(async (user) => {
+          const postCount = await this.postRepository.count({
+            where: { userId: user.id },
+          });
+          return {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            postCount,
+          };
+        }),
+      );
+
+      // Sort by post count (descending) and then by name
+      usersWithPosts.sort((a, b) => {
+        if (b.postCount !== a.postCount) {
+          return b.postCount - a.postCount;
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+      // Return top active users
+      return usersWithPosts.slice(0, limit);
+    } catch (error) {
+      console.error('Error in getUsersWithActivity:', error);
       return [];
     }
   }

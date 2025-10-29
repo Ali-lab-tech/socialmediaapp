@@ -732,9 +732,9 @@ export default {
 
 <style scoped>
 .posts-container {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Loading State */

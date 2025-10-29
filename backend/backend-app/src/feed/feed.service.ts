@@ -190,4 +190,32 @@ export class FeedService {
     }
     return await this.commentRepository.find({ where: { postId }, order: { createdAt: 'ASC' }, relations: ['user'] });
   }
+
+  async getTrendingPosts(limit: number = 10): Promise<Post[]> {
+    // Get all posts with relations
+    const allPosts = await this.postRepository.find({
+      relations: ['user', 'likes', 'comments', 'comments.user'],
+      order: { createdAt: 'DESC' },
+    });
+
+    // Calculate engagement score for each post (likes + comments)
+    const postsWithEngagement = allPosts.map(post => ({
+      post,
+      engagementScore: (post.likes?.length || 0) + (post.comments?.length || 0),
+      createdAt: post.createdAt,
+    }));
+
+    // Sort by engagement score (descending), then by recency (descending)
+    postsWithEngagement.sort((a, b) => {
+      // First sort by engagement score
+      if (b.engagementScore !== a.engagementScore) {
+        return b.engagementScore - a.engagementScore;
+      }
+      // Then by recency
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    // Return top posts
+    return postsWithEngagement.slice(0, limit).map(item => item.post);
+  }
 }
