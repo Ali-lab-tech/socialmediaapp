@@ -35,6 +35,12 @@ async function createApp() {
 }
 
 export default async function handler(req: express.Request, res: express.Response) {
+  // Strip /api prefix from path since Vercel routes /api/* to this function
+  // but NestJS routes don't have /api prefix
+  if (req.url.startsWith('/api')) {
+    req.url = req.url.replace('/api', '') || '/';
+  }
+  
   const app = await createApp();
   return app(req, res);
 }
