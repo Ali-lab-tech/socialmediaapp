@@ -119,4 +119,26 @@ export class FeedController {
   async toggleLike(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return await this.feedService.toggleLike(id, req.user.id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:id/share')
+  async sharePost(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return await this.feedService.sharePost(id, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('posts/:id/comments')
+  async createComment(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body() body: { content: string },
+  ) {
+    return await this.feedService.createComment(id, req.user.id, body.content);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('posts/:id/comments')
+  async getComments(@Param('id', ParseIntPipe) id: number) {
+    return await this.feedService.getCommentsByPostId(id);
+  }
 }

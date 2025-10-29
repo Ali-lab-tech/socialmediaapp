@@ -1,21 +1,21 @@
 {
   "name": "socialmediaapp",
   "version": "1.0.0",
+  "private": true,
   "main": "index.js",
   "scripts": {
     "dev:backend": "cd backend/backend-app && npm run start:dev",
     "dev:frontend": "cd frontend/frontendapp && npm run serve",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""  
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "start:backend": "cd backend/backend-app && npm start",
+    "start:frontend": "cd frontend/frontendapp && npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "workspaces": [
     "backend",
     "frontend"
   ],
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3"
   }
 }

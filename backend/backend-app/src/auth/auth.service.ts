@@ -76,6 +76,53 @@ export class AuthService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  async searchUsers(query: string, limit: number = 10): Promise<User[]> {
+    try {
+      if (!query || query.trim().length === 0) {
+        // Return most recent users when no query provided
+        console.log('Searching all users, limit:', limit);
+        const allUsers = await this.userRepository.find({
+          take: limit,
+          order: { createdAt: 'DESC' },
+        });
+        console.log('Found users:', allUsers.length);
+        
+        // Return only needed fields (exclude password)
+        const result = allUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+        })) as User[];
+        
+        console.log('Returning users:', result.length);
+        return result;
+      }
+
+      const searchTerm = `%${query.toLowerCase()}%`;
+      console.log('Searching users with term:', searchTerm);
+      const users = await this.userRepository
+        .createQueryBuilder('user')
+        .where('LOWER(user.name) LIKE :search', { search: searchTerm })
+        .orWhere('LOWER(user.username) LIKE :search', { search: searchTerm })
+        .limit(limit)
+        .getMany();
+      
+      console.log('Found users:', users.length);
+      
+      // Return only needed fields (exclude password)
+      const result = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+      })) as User[];
+      
+      return result;
+    } catch (error) {
+      console.error('Error in searchUsers:', error);
+      return [];
+    }
+  }
+
   async updateProfile(userId: number, updateData: { username?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string }) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Request, UnauthorizedException, Put } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Request, UnauthorizedException, Put, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -41,5 +41,12 @@ export class AuthController {
   @Put('profile')
   async updateProfile(@Request() req, @Body() updateDto: { username?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string }) {
     return this.authService.updateProfile(req.user.id, updateDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('search')
+  async searchUsers(@Request() req, @Query('q') query: string, @Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.authService.searchUsers(query || '', limitNum);
   }
 }
