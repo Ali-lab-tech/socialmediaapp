@@ -4,7 +4,9 @@
     {
       "src": "frontend/frontendapp/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "distDir": "frontend/frontendapp/dist"
+      }
     },
     {
       "src": "backend/backend-app/api/index.ts",
