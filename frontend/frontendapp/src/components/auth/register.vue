@@ -77,6 +77,8 @@
 </template>
 
 <script>
+import apiConfig from '@/config/api';
+
 export default {
   name: 'RegisterPage',
   data() {
@@ -90,7 +92,7 @@ export default {
   methods: {
     async signup() {
       try {
-        const response = await fetch('http://localhost:3000/auth/register', {
+        const response = await fetch(apiConfig.auth.register, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: this.username, password: this.password, name: this.name, email: this.email }),

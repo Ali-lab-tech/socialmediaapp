@@ -53,6 +53,8 @@
 </template>
 
 <script>
+import apiConfig from '@/config/api';
+
 export default {
   name: 'UsersList',
   data() {
@@ -83,7 +85,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await fetch('http://localhost:3000/auth/activity?limit=50', {
+        const response = await fetch(`${apiConfig.auth.activity}?limit=50`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },

@@ -104,6 +104,8 @@
 </template>
 
 <script>
+import apiConfig from '@/config/api';
+
 export default {
   name: 'TrendingPosts',
   data() {
@@ -129,7 +131,7 @@ export default {
   methods: {
     async loadTrendingPosts() {
       try {
-        const response = await fetch('http://localhost:3000/feed/posts/trending', {
+        const response = await fetch(apiConfig.feed.trending, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },

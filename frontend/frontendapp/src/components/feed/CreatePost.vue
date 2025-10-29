@@ -67,6 +67,8 @@
 </template>
 
 <script>
+import apiConfig from '@/config/api';
+
 export default {
   name: 'CreatePost',
   data() {
@@ -105,7 +107,7 @@ export default {
           formData.append('image', this.selectedImage);
         }
         
-        const response = await fetch('http://localhost:3000/feed/posts', {
+        const response = await fetch(apiConfig.feed.posts, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,

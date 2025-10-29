@@ -1,0 +1,5 @@
+DB_HOST=b4f9703akv5sjltc6gap-mysql.services.clever-cloud.com
+DB_PORT=3306
+DB_USER=u34tg3hkol0zqav4
+DB_PASS=ZNCfutYZgNJCUGbsnNwx
+DB_NAME=b4f9703akv5sjltc6gap

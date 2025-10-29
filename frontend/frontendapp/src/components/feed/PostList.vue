@@ -218,6 +218,8 @@
 </template>
 
 <script>
+import apiConfig from '@/config/api';
+
 export default {
   name: 'PostList',
   data() {
@@ -297,13 +299,7 @@ export default {
   },
   methods: {
     getImageUrl(imageUrl) {
-      if (!imageUrl) return '';
-      // If imageUrl already includes http://, return as is
-      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-        return imageUrl;
-      }
-      // Otherwise, prepend the backend URL
-      return `http://localhost:3000${imageUrl}`;
+      return apiConfig.getImageUrl(imageUrl);
     },
     async loadCurrentUser() {
       const userStr = localStorage.getItem('user');
@@ -329,7 +325,7 @@ export default {
       this.loading = true;
       this.error = null;
       try {
-        const response = await fetch('http://localhost:3000/feed/posts', {
+        const response = await fetch(apiConfig.feed.posts, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
@@ -425,7 +421,7 @@ export default {
           formData.append('imageUrl', '');
         }
         
-        const response = await fetch(`http://localhost:3000/feed/posts/${this.editingPost.id}`, {
+        const response = await fetch(apiConfig.feed.postById(this.editingPost.id), {
           method: 'PUT',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -453,7 +449,7 @@ export default {
     },
     async deletePost(postId) {
       try {
-        const response = await fetch(`http://localhost:3000/feed/posts/${postId}`, {
+        const response = await fetch(apiConfig.feed.postById(postId), {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -495,7 +491,7 @@ export default {
     },
     async loadComments(postId) {
       try {
-        const response = await fetch(`http://localhost:3000/feed/posts/${postId}/comments`, {
+        const response = await fetch(apiConfig.feed.comments(postId), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
@@ -512,7 +508,7 @@ export default {
       const content = (this.commentInput[postId] || '').trim();
       if (!content) return;
       try {
-        const response = await fetch(`http://localhost:3000/feed/posts/${postId}/comments`, {
+        const response = await fetch(apiConfig.feed.comments(postId), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -544,7 +540,7 @@ export default {
     },
     async toggleLike(postId) {
       try {
-        const response = await fetch(`http://localhost:3000/feed/posts/${postId}/like`, {
+        const response = await fetch(apiConfig.feed.like(postId), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -575,7 +571,7 @@ export default {
     },
     async sharePost(postId) {
       try {
-        const response = await fetch(`http://localhost:3000/feed/posts/${postId}/share`, {
+        const response = await fetch(apiConfig.feed.share(postId), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -674,7 +670,7 @@ export default {
       try {
         // If query is empty, still search to show recent/all users
         const searchQuery = query || '';
-        const url = `http://localhost:3000/auth/search?q=${encodeURIComponent(searchQuery)}&limit=5`;
+        const url = `${apiConfig.auth.search}?q=${encodeURIComponent(searchQuery)}&limit=5`;
         
         const response = await fetch(url, {
           headers: {
