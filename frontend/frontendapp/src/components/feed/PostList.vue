@@ -33,16 +33,24 @@
             </div>
           </div>
           
-          <div v-if="isOwnPost(post.userId)" class="post-menu">
+          <div class="post-menu">
             <button
+              v-show="userLoaded && isOwnPost(post.userId)"
               class="menu-btn"
               type="button"
-              @click="toggleMenu(post.id)"
+              @click="handleMenuClick(post.id, $event)"
               :id="'menu-' + post.id"
+              title="Options"
+              style="display: flex !important;"
             >
-              <i class="fas fa-ellipsis-h"></i>
+              <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             </button>
-            <div v-if="openMenus[post.id]" class="menu-dropdown" @click.stop>
+            <div 
+              v-if="openMenus[String(post.id)] === true"
+              class="menu-dropdown"
+              @click.stop
+              @mousedown.stop
+            >
               <button class="menu-item" @click="editPost(post); closeMenu(post.id)">
                 <i class="fas fa-edit"></i>
                 <span>Edit</span>
@@ -229,19 +237,34 @@ export default {
       mentionCaretPosition: {}, // postId -> caret position
       allUsers: [], // Cache all users for mention display
       openMenus: {}, // Track which post menus are open
+      userLoaded: false, // Track if user has been loaded
     };
   },
-  mounted() {
-    this.loadPosts();
-    this.loadCurrentUser();
-    // Close menus when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.post-menu')) {
-        Object.keys(this.openMenus).forEach(id => {
-          this.openMenus[id] = false;
-        });
-      }
-    });
+  async mounted() {
+    // Load user first, wait for it to complete
+    await this.loadCurrentUser();
+    if (this.currentUserId) {
+      this.userLoaded = true;
+    }
+    // Then load posts
+    await this.loadPosts();
+    
+    // Close menus when clicking outside - with delay to avoid immediate closure
+    setTimeout(() => {
+      document.addEventListener('click', (e) => {
+        const target = e.target;
+        const isMenuButton = target.closest('.menu-btn');
+        const isMenuDropdown = target.closest('.menu-dropdown');
+        const isPostMenu = target.closest('.post-menu');
+        
+        if (!isMenuButton && !isMenuDropdown && !isPostMenu) {
+          if (Object.keys(this.openMenus).length > 0) {
+            this.openMenus = {};
+            this.$forceUpdate();
+          }
+        }
+      });
+    }, 500);
   },
   methods: {
     getImageUrl(imageUrl) {
@@ -256,11 +279,29 @@ export default {
     async loadCurrentUser() {
       const userStr = localStorage.getItem('user');
       if (userStr) {
-        const user = JSON.parse(userStr);
-        this.currentUserId = user.id;
+        try {
+          const user = JSON.parse(userStr);
+          this.currentUserId = Number(user.id);
+          this.userLoaded = true;
+          console.log('✅ User loaded - ID:', this.currentUserId);
+        } catch (error) {
+          console.error('❌ Error parsing user:', error);
+          this.currentUserId = null;
+        }
+      } else {
+        this.currentUserId = null;
+        console.warn('⚠️ No user found in localStorage');
       }
     },
     async loadPosts() {
+      // Ensure user is loaded before processing posts
+      if (!this.userLoaded || !this.currentUserId) {
+        await this.loadCurrentUser();
+        if (this.currentUserId) {
+          this.userLoaded = true;
+        }
+      }
+      
       this.loading = true;
       this.error = null;
       try {
@@ -271,7 +312,9 @@ export default {
         });
 
         if (response.ok) {
-          this.posts = await response.json();
+          const loadedPosts = await response.json();
+          this.posts = loadedPosts;
+          
           // Track user likes
           this.posts.forEach(post => {
           if (post.likes && post.likes.length > 0) {
@@ -295,7 +338,38 @@ export default {
       }
     },
     isOwnPost(userId) {
-      return this.currentUserId === userId;
+      // Always get fresh from localStorage
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.log('❌ isOwnPost: No user in localStorage');
+        return false;
+      }
+      
+      let currentId;
+      try {
+        const user = JSON.parse(userStr);
+        currentId = Number(user.id);
+        // Update component state
+        this.currentUserId = currentId;
+        this.userLoaded = true;
+ 
+      } catch (e) {
+      
+        return false;
+      }
+      
+      // Simple validation
+      if (!currentId || !userId) {
+        return false;
+      }
+      
+      // Direct comparison
+      const postUserId = Number(userId);
+      const isOwn = currentId === postUserId;
+      
+     
+      
+      return isOwn;
     },
     formatDate(dateString) {
       const date = new Date(dateString);
@@ -714,14 +788,30 @@ export default {
         console.error('Error loading users:', error);
       }
     },
-    toggleMenu(postId) {
-      this.openMenus[postId] = !this.openMenus[postId];
-      // Close other menus
-      Object.keys(this.openMenus).forEach(id => {
-        if (id != postId) {
-          this.openMenus[id] = false;
-        }
-      });
+    handleMenuClick(postId, event) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      
+      const postIdStr = String(postId);
+      const isCurrentlyOpen = this.openMenus[postIdStr] === true;
+      
+      console.log('Menu click - postId:', postIdStr, 'currently open:', isCurrentlyOpen);
+      
+      // Simply toggle - close if open, open if closed
+      if (isCurrentlyOpen) {
+        // Close this menu
+        this.openMenus = {};
+        console.log('Closing menu');
+      } else {
+        // Close all others and open this one
+        this.openMenus = { [postIdStr]: true };
+        console.log('Opening menu:', this.openMenus);
+      }
+      
+      // Force update to ensure reactivity
+      this.$forceUpdate();
     },
     closeMenu(postId) {
       this.openMenus[postId] = false;
@@ -844,6 +934,8 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.25rem;
+  position: relative;
+  z-index: 1;
 }
 
 .post-author {
@@ -891,25 +983,52 @@ export default {
 /* Post Menu */
 .post-menu {
   position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .menu-btn {
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
   border: none;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 11;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-btn i {
+  font-size: 1rem;
+  display: inline-block;
 }
 
 .menu-btn:hover {
   background: var(--accent-primary);
   color: white;
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-5px) scale(0.95);
 }
 
 .menu-dropdown {
@@ -922,7 +1041,7 @@ export default {
   box-shadow: var(--shadow-xl);
   min-width: 160px;
   overflow: hidden;
-  z-index: 100;
+  z-index: 1000;
 }
 
 .menu-item {
@@ -1223,11 +1342,26 @@ export default {
 }
 
 /* Modal Styles */
+/* Modal z-index to appear above navbar */
+.modal {
+  z-index: 10000 !important;
+  padding-top: 80px !important; /* Space below navbar */
+}
+
+.modal-dialog {
+  margin-top: 2rem !important; /* Additional spacing */
+}
+
+.modal-backdrop {
+  z-index: 9999 !important;
+}
+
 .modal-content {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 20px;
   color: var(--text-primary);
+  z-index: 10001 !important;
 }
 
 .modal-header {
