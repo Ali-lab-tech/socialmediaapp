@@ -1,112 +1,120 @@
 <template>
   <div class="posts-container">
-    <div v-if="loading" class="text-center my-4">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
+    <div v-if="loading" class="loading-container">
+      <div class="spinner-modern"></div>
+      <p class="loading-text">Loading posts...</p>
+    </div>
+    
+    <div v-else-if="error" class="error-container">
+      <i class="fas fa-exclamation-circle"></i>
+      <p>{{ error }}</p>
+    </div>
+    
+    <div v-else-if="posts.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-comments"></i>
       </div>
+      <h3>No posts yet</h3>
+      <p>Be the first to share something amazing!</p>
     </div>
     
-    <div v-else-if="error" class="alert alert-danger">
-      {{ error }}
-    </div>
-    
-    <div v-else-if="posts.length === 0" class="card">
-      <div class="card-body text-center">
-        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-        <p class="text-muted">No posts yet. Be the first to share something!</p>
-      </div>
-    </div>
-    
-    <div v-else class="card mb-3" v-for="post in posts" :key="post.id">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <div class="d-flex align-items-center">
-            <div class="user-avatar me-2">
-              <i class="fas fa-user-circle fa-2x text-primary"></i>
+    <div v-else class="posts-grid">
+      <article class="post-card" v-for="post in posts" :key="post.id">
+        <div class="post-header">
+          <div class="post-author">
+            <div class="author-avatar">
+              <div class="avatar-inner">
+                <i class="fas fa-user"></i>
+              </div>
             </div>
-            <div>
-              <h6 class="mb-0 fw-bold">{{ post.user ? post.user.name : 'Unknown User' }}</h6>
-              <small class="text-muted">{{ formatDate(post.createdAt) }}</small>
+            <div class="author-info">
+              <h4 class="author-name">{{ post.user ? post.user.name : 'Unknown User' }}</h4>
+              <span class="post-time">{{ formatDate(post.createdAt) }}</span>
             </div>
           </div>
           
-          <div v-if="isOwnPost(post.userId)" class="dropdown">
+          <div v-if="isOwnPost(post.userId)" class="post-menu">
             <button
-              class="btn btn-sm btn-link text-muted"
+              class="menu-btn"
               type="button"
-              :id="'dropdown' + post.id"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              @click="toggleMenu(post.id)"
+              :id="'menu-' + post.id"
             >
-              <i class="fas fa-ellipsis-v"></i>
+              <i class="fas fa-ellipsis-h"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" :aria-labelledby="'dropdown' + post.id">
-              <li>
-                <button class="dropdown-item" @click="editPost(post)">
-                  <i class="fas fa-edit me-2"></i>Edit
-                </button>
-              </li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <button class="dropdown-item text-danger" @click="deletePost(post.id)">
-                  <i class="fas fa-trash me-2"></i>Delete
-                </button>
-              </li>
-            </ul>
+            <div v-if="openMenus[post.id]" class="menu-dropdown" @click.stop>
+              <button class="menu-item" @click="editPost(post); closeMenu(post.id)">
+                <i class="fas fa-edit"></i>
+                <span>Edit</span>
+              </button>
+              <button class="menu-item danger" @click="deletePost(post.id); closeMenu(post.id)">
+                <i class="fas fa-trash"></i>
+                <span>Delete</span>
+              </button>
+            </div>
           </div>
         </div>
         
-        <div class="post-content">
-          <p class="mb-2" v-html="formatContentWithMentions(post.content)"></p>
-          <div v-if="post.imageUrl" class="post-image mb-2">
-            <img :src="getImageUrl(post.imageUrl)" alt="Post image" class="img-fluid rounded" />
+        <div class="post-body">
+          <div class="post-text" v-html="formatContentWithMentions(post.content)"></div>
+          <div v-if="post.imageUrl" class="post-image-wrapper">
+            <img :src="getImageUrl(post.imageUrl)" alt="Post image" class="post-image" />
           </div>
         </div>
         
-        <div class="post-actions border-top pt-2 mt-2">
+        <div class="post-footer">
           <button 
-            class="btn btn-sm" 
-            :class="isPostLiked(post.id) ? 'btn-primary' : 'btn-link text-muted'"
+            class="action-btn" 
+            :class="{ active: isPostLiked(post.id) }"
             @click="toggleLike(post.id)"
           >
-            <i :class="isPostLiked(post.id) ? 'fas fa-heart' : 'far fa-heart'" class="me-1"></i>
+            <i :class="isPostLiked(post.id) ? 'fas fa-heart' : 'far fa-heart'"></i>
             <span>{{ getLikesCount(post.id) }}</span>
           </button>
 
           <button 
-            class="btn btn-sm btn-link text-muted"
+            class="action-btn"
+            :class="{ active: isCommentsOpen(post.id) }"
             @click="toggleComments(post.id)"
             title="Comments"
           >
-            <i class="far fa-comment me-1"></i>
+            <i class="far fa-comment"></i>
             <span>{{ getCommentsCount(post.id) }}</span>
           </button>
 
           <button 
             v-if="!isOwnPost(post.userId)"
-            class="btn btn-sm btn-link text-muted" 
+            class="action-btn" 
             @click="sharePost(post.id)"
             title="Share Post"
           >
-            <i class="fas fa-share me-1"></i>
+            <i class="fas fa-share"></i>
             <span>Share</span>
           </button>
         </div>
 
         <!-- Comments Section -->
-        <div v-if="isCommentsOpen(post.id)" class="mt-2">
-          <div class="mb-2" v-if="commentsByPost[post.id] && commentsByPost[post.id].length">
-            <div v-for="comment in commentsByPost[post.id]" :key="comment.id" class="d-flex mb-2">
-              <div class="me-2">
-                <i class="fas fa-user-circle text-primary"></i>
+        <div v-if="isCommentsOpen(post.id)" class="comments-section">
+          <div class="comments-list" v-if="commentsByPost[post.id] && commentsByPost[post.id].length">
+            <div v-for="comment in commentsByPost[post.id]" :key="comment.id" class="comment-item">
+              <div class="comment-avatar">
+                <div class="avatar-small">
+                  <i class="fas fa-user"></i>
+                </div>
               </div>
-              <div>
-                <div class="small"><strong>{{ comment.user?.name || 'Unknown' }}</strong> · <span class="text-muted">{{ formatDate(comment.createdAt) }}</span></div>
-                <div v-html="formatContentWithMentions(comment.content)"></div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <strong class="comment-author">{{ comment.user?.name || 'Unknown' }}</strong>
+                  <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
+                </div>
+                <div class="comment-text" v-html="formatContentWithMentions(comment.content)"></div>
               </div>
             </div>
           </div>
-          <div v-else class="text-muted small mb-2">No comments yet. Be the first to comment.</div>
+          <div v-else class="no-comments">
+            <i class="fas fa-comment-dots"></i>
+            <p>No comments yet. Be the first to comment.</p>
+          </div>
 
           <div class="mention-input-container" :data-post-id="post.id">
             <div class="input-group">
@@ -119,7 +127,9 @@
                 @keydown="handleMentionKeydown(post.id, $event)"
                 rows="2"
               ></textarea>
-              <button class="btn btn-primary" @click="submitComment(post.id)">Comment</button>
+              <button class="btn-comment" @click="submitComment(post.id)">
+                <i class="fas fa-paper-plane me-1"></i>Comment
+              </button>
             </div>
             <!-- Mention Suggestions Dropdown -->
             <div 
@@ -135,16 +145,18 @@
                 @click="selectMention(post.id, user)"
                 @mouseenter="mentionSelectedIndex[post.id] = index"
               >
-                <i class="fas fa-user-circle me-2 text-primary"></i>
-                <span class="fw-bold">{{ user.name }}</span>
-                <span class="text-muted small ms-2">@{{ user.username }}</span>
+                <i class="fas fa-user-circle"></i>
+                <div class="mention-user-info">
+                  <span class="mention-user-name">{{ user.name }}</span>
+                  <span class="mention-username">@{{ user.username }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         
-      </div>
+      </article>
     </div>
     
     <!-- Edit Post Modal -->
@@ -216,11 +228,20 @@ export default {
       mentionSelectedIndex: {}, // postId -> selected index
       mentionCaretPosition: {}, // postId -> caret position
       allUsers: [], // Cache all users for mention display
+      openMenus: {}, // Track which post menus are open
     };
   },
   mounted() {
     this.loadPosts();
     this.loadCurrentUser();
+    // Close menus when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.post-menu')) {
+        Object.keys(this.openMenus).forEach(id => {
+          this.openMenus[id] = false;
+        });
+      }
+    });
   },
   methods: {
     getImageUrl(imageUrl) {
@@ -693,127 +714,451 @@ export default {
         console.error('Error loading users:', error);
       }
     },
+    toggleMenu(postId) {
+      this.openMenus[postId] = !this.openMenus[postId];
+      // Close other menus
+      Object.keys(this.openMenus).forEach(id => {
+        if (id != postId) {
+          this.openMenus[id] = false;
+        }
+      });
+    },
+    closeMenu(postId) {
+      this.openMenus[postId] = false;
+    },
   },
 };
 </script>
 
 <style scoped>
-/* Mention styles need to be global or use deep selector */
 .posts-container {
-  max-width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
-.user-avatar {
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.spinner-modern {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--bg-tertiary);
+  border-top: 4px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Error State */
+.error-container {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--error);
+}
+
+.error-container i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--bg-card);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
+}
+
+.empty-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1.5rem;
+  background: var(--accent-gradient);
+  border-radius: 50%;
   display: flex;
   align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
 }
 
-.post-content {
-  margin-top: 1rem;
+.empty-state h3 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
 }
 
-.post-image img {
-  max-height: 400px;
-  object-fit: cover;
-  width: 100%;
+.empty-state p {
+  color: var(--text-secondary);
+  font-size: 1rem;
 }
 
-.card {
-  border: 1px solid #4A90E2;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
-  background: #FFFFFF;
+/* Posts Grid */
+.posts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.btn-primary {
-  background-color: #4A90E2;
-  border-color: #4A90E2;
-  color: #FFFFFF;
-}
-
-.btn-primary:hover {
-  background-color: #357ABD;
-  border-color: #357ABD;
-}
-
-.btn-link:hover {
-  color: #4A90E2 !important;
-}
-
-.user-avatar i {
-  color: #4A90E2;
-}
-
-.post-actions .btn {
-  transition: all 0.2s;
-}
-
-.post-actions .btn:hover {
-  transform: translateY(-2px);
-}
-
-.modal-content {
-  border: 1px solid #4A90E2;
-}
-
-.btn-close {
-  filter: brightness(0);
-}
-
-.form-control:focus {
-  border-color: #4A90E2;
-  box-shadow: 0 0 0 0.2rem rgba(43, 32, 37, 0.25);
-}
-
-/* Use deep selector to style v-html content */
-::v-deep(.mention-tag),
-::v-deep .mention-tag {
-  color: #1DA1F2 !important;
-  font-weight: 700 !important;
-  cursor: pointer;
-  background-color: #E8F4F8 !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  text-decoration: none !important;
-  display: inline-block !important;
-  transition: all 0.2s ease;
-}
-
-::v-deep(.mention-tag:hover),
-::v-deep .mention-tag:hover {
-  background-color: #1DA1F2 !important;
-  color: white !important;
-  text-decoration: none !important;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(29, 161, 242, 0.3) !important;
-}
-
-.mention-input-container {
+/* Post Card */
+.post-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
   position: relative;
 }
 
-.mention-suggestions {
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 0;
-  right: 75px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-height: 200px;
-  overflow-y: auto;
-  margin-bottom: 5px;
-  z-index: 1050;
-  width: auto;
-  min-width: 250px;
+.post-card:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
 }
 
-.mention-suggestion-item {
-  padding: 10px 15px;
+/* Post Header */
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.author-avatar {
+  position: relative;
+}
+
+.avatar-inner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  box-shadow: var(--shadow-md);
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.post-time {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Post Menu */
+.post-menu {
+  position: relative;
+}
+
+.menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #f0f0f0;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.menu-btn:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xl);
+  min-width: 160px;
+  overflow: hidden;
+  z-index: 100;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.menu-item:hover {
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+}
+
+.menu-item.danger {
+  color: var(--error);
+}
+
+.menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.menu-item i {
+  width: 18px;
+}
+
+/* Post Body */
+.post-body {
+  margin-bottom: 1.25rem;
+}
+
+.post-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.post-image-wrapper {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.post-image {
+  width: 100%;
+  max-height: 500px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Post Footer */
+.post-footer {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+}
+
+.action-btn.active {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.action-btn.active i.fa-heart {
+  color: var(--error) !important;
+}
+
+.action-btn.active i.fa-comment {
+  color: var(--accent-primary) !important;
+}
+
+/* Comments Section */
+.comments-section {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.comments-list {
+  margin-bottom: 1.25rem;
+}
+
+.comment-item {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+  background: var(--bg-secondary);
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+}
+
+.avatar-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.comment-author {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.comment-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.comment-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.no-comments {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.no-comments i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+/* Comment Input */
+.mention-input-container {
+  position: relative;
+  margin-top: 1rem;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mention-textarea,
+.form-control {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.mention-textarea:focus,
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Mention Suggestions */
+.mention-suggestions {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 90px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+  min-width: 280px;
+}
+
+.mention-suggestion-item {
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
 }
 
 .mention-suggestion-item:last-child {
@@ -822,33 +1167,137 @@ export default {
 
 .mention-suggestion-item:hover,
 .mention-suggestion-item.active {
-  background-color: #f0f7ff;
+  background: var(--bg-secondary);
+}
+
+.mention-suggestion-item i {
+  color: var(--accent-primary);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.mention-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.mention-user-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.mention-username {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .mention-textarea {
   resize: vertical;
+  min-height: 80px;
+}
+
+.btn-comment {
+  padding: 0.875rem 1.5rem;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-comment:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-comment:active {
+  transform: translateY(0);
+}
+
+/* Modal Styles */
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-primary);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  border: none;
+  color: var(--text-primary);
+  padding: 0.625rem 1.5rem;
+  border-radius: 12px;
+}
+
+.btn-close {
+  filter: brightness(0);
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .posts-container {
+    padding: 1rem 0.5rem;
+  }
+  
+  .post-card {
+    padding: 1.25rem;
+  }
 }
 </style>
 
 <style>
-/* Global styles for mention tags in v-html content */
+/* Global styles for mention tags in v-html content - supports dark mode */
 .mention-tag {
-  color: #1DA1F2 !important;
+  color: var(--mention-color) !important;
   font-weight: 700 !important;
   cursor: pointer;
-  background-color: #E8F4F8 !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
+  background-color: var(--mention-bg) !important;
+  padding: 3px 8px !important;
+  border-radius: 8px !important;
   text-decoration: none !important;
   display: inline-block !important;
   transition: all 0.2s ease;
+  margin: 0 2px;
 }
 
 .mention-tag:hover {
-  background-color: #1DA1F2 !important;
-  color: white !important;
+  background-color: var(--mention-hover-bg) !important;
+  color: var(--mention-hover-color) !important;
   text-decoration: none !important;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(29, 161, 242, 0.3) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 </style>
+

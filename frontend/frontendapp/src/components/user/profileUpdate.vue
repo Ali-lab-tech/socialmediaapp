@@ -1,93 +1,113 @@
 <template>
-  <div class="container mt-4">
-    <div class="row justify-content-center">
-      <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
-          <div class="card-header bg-primary text-white">
-            <h4 class="card-title mb-0">
-              <i class="fas fa-user-edit me-2"></i>Update Profile
-            </h4>
+  <div class="profile-update-container">
+    <div class="profile-card">
+      <div class="profile-header">
+        <div class="profile-icon">
+          <i class="fas fa-user-edit"></i>
+        </div>
+        <h1 class="profile-title">Update Profile</h1>
+        <p class="profile-subtitle">Keep your information up to date</p>
+      </div>
+      
+      <form @submit.prevent="updateProfile" class="profile-form">
+        <div class="input-group">
+          <div class="input-icon">
+            <i class="fas fa-user"></i>
           </div>
-          <div class="card-body p-4">
-            <form @submit.prevent="updateProfile">
-              <div class="mb-3">
-                <label for="username" class="form-label">
-                  <i class="fas fa-user me-1"></i>Username
-                </label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="username" 
-                  v-model="profileForm.username"
-                  required
-                >
-              </div>
-              
-              <div class="mb-3">
-                <label for="name" class="form-label">
-                  <i class="fas fa-id-card me-1"></i>Full Name
-                </label>
-                <input 
-                  type="text" 
-                  class="form-control" 
-                  id="name" 
-                  v-model="profileForm.name"
-                  required
-                >
-              </div>
-              
-              <div class="mb-3">
-                <label for="email" class="form-label">
-                  <i class="fas fa-envelope me-1"></i>Email
-                </label>
-                <input 
-                  type="email" 
-                  class="form-control" 
-                  id="email" 
-                  v-model="profileForm.email"
-                >
-              </div>
-              
-              <div class="mb-3">
-                <label for="currentPassword" class="form-label">
-                  <i class="fas fa-lock me-1"></i>Current Password
-                </label>
-                <input 
-                  type="password" 
-                  class="form-control" 
-                  id="currentPassword" 
-                  v-model="profileForm.currentPassword"
-                  placeholder="Enter current password to confirm changes"
-                >
-              </div>
-              
-              <div class="mb-3">
-                <label for="newPassword" class="form-label">
-                  <i class="fas fa-key me-1"></i>New Password (Optional)
-                </label>
-                <input 
-                  type="password" 
-                  class="form-control" 
-                  id="newPassword" 
-                  v-model="profileForm.newPassword"
-                  placeholder="Leave empty to keep current password"
-                >
-              </div>
-              
-              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                <button type="button" class="btn btn-secondary me-md-2" @click="goBack">
-                  <i class="fas fa-arrow-left me-1"></i>Cancel
-                </button>
-                <button type="submit" class="btn btn-primary" :disabled="updating">
-                  <i class="fas fa-save me-1" v-if="!updating"></i>
-                  <span class="spinner-border spinner-border-sm me-1" v-if="updating"></span>
-                  {{ updating ? 'Updating...' : 'Update Profile' }}
-                </button>
-              </div>
-            </form>
+          <div class="input-wrapper">
+            <label for="username" class="input-label">Username</label>
+            <input 
+              type="text" 
+              class="form-input" 
+              id="username" 
+              v-model="profileForm.username"
+              required
+            >
           </div>
         </div>
-      </div>
+        
+        <div class="input-group">
+          <div class="input-icon">
+            <i class="fas fa-id-card"></i>
+          </div>
+          <div class="input-wrapper">
+            <label for="name" class="input-label">Full Name</label>
+            <input 
+              type="text" 
+              class="form-input" 
+              id="name" 
+              v-model="profileForm.name"
+              required
+            >
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-icon">
+            <i class="fas fa-envelope"></i>
+          </div>
+          <div class="input-wrapper">
+            <label for="email" class="input-label">Email</label>
+            <input 
+              type="email" 
+              class="form-input" 
+              id="email" 
+              v-model="profileForm.email"
+            >
+          </div>
+        </div>
+        
+        <div class="password-section">
+          <h3 class="section-title">
+            <i class="fas fa-lock"></i>
+            Change Password (Optional)
+          </h3>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-icon">
+            <i class="fas fa-lock"></i>
+          </div>
+          <div class="input-wrapper">
+            <label for="currentPassword" class="input-label">Current Password</label>
+            <input 
+              type="password" 
+              class="form-input" 
+              id="currentPassword" 
+              v-model="profileForm.currentPassword"
+              placeholder="Enter current password to confirm changes"
+            >
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <div class="input-icon">
+            <i class="fas fa-key"></i>
+          </div>
+          <div class="input-wrapper">
+            <label for="newPassword" class="input-label">New Password</label>
+            <input 
+              type="password" 
+              class="form-input" 
+              id="newPassword" 
+              v-model="profileForm.newPassword"
+              placeholder="Leave empty to keep current password"
+            >
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" @click="goBack">
+            <i class="fas fa-arrow-left"></i>
+            <span>Cancel</span>
+          </button>
+          <button type="submit" class="btn-submit" :disabled="updating">
+            <span v-if="updating" class="spinner-small"></span>
+            <i v-else class="fas fa-save"></i>
+            <span>{{ updating ? 'Updating...' : 'Update Profile' }}</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -202,47 +222,246 @@ export default {
 </script>
 
 <style scoped>
-.card {
-  border: 1px solid #dee2e6;
+.profile-update-container {
+  min-height: calc(100vh - 76px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--bg-secondary);
 }
 
-.card-header {
-  background-color: #007bff;
-  border-bottom: 1px solid #dee2e6;
+.profile-card {
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-card);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
 }
 
-.form-label {
-  font-weight: 500;
-  color: #495057;
+.profile-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
 }
 
-.form-control:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+.profile-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: var(--accent-gradient);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 2.5rem;
+  box-shadow: var(--shadow-lg);
 }
 
-.btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
+.profile-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
 }
 
-.btn-primary:hover {
-  background-color: #0056b3;
-  border-color: #004085;
+.profile-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
+.input-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
-.btn:disabled {
+.input-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.password-section {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title i {
+  color: var(--accent-primary);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-cancel {
+  flex: 1;
+  padding: 1rem 2rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-submit {
+  flex: 1;
+  padding: 1rem 2rem;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .profile-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .profile-title {
+    font-size: 1.75rem;
+  }
+  
+  .profile-icon {
+    width: 64px;
+    height: 64px;
+    font-size: 2rem;
+  }
+  
+  .input-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .input-icon {
+    margin-top: 0;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
 }
 </style>
