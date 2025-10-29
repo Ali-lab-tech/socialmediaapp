@@ -242,16 +242,10 @@ export default {
   async mounted() {
     // Load user first - ensure it's a number
     const userStr = localStorage.getItem('user');
-    console.log('=== MOUNTED - Loading User ===');
-    console.log('userStr from localStorage:', userStr);
-    
     let userId = null;
     
     if (userStr) {
       const user = JSON.parse(userStr);
-      console.log('Parsed user:', user);
-      console.log('user.id:', user.id, 'Type:', typeof user.id);
-      
       // Try to get userId from user object
       userId = user.id || user.userId || user.ID || user.user_id;
     }
@@ -264,9 +258,8 @@ export default {
           // JWT token format: header.payload.signature
           const payload = JSON.parse(atob(token.split('.')[1]));
           userId = payload.sub; // JWT 'sub' field contains the user ID
-          console.log('Extracted userId from JWT token:', userId);
         } catch (e) {
-          console.log('Failed to extract userId from token:', e);
+          // Token parsing failed, userId remains null
         }
       }
     }
@@ -275,13 +268,10 @@ export default {
       const numUserId = Number(userId);
       if (!isNaN(numUserId) && numUserId !== 0) {
         this.currentUserId = numUserId;
-        console.log('✅ Set currentUserId to:', this.currentUserId, 'Type:', typeof this.currentUserId);
       } else {
-        console.log('❌ userId is NaN or 0:', numUserId);
         this.currentUserId = null;
       }
     } else {
-      console.log('❌ No userId found in user object or JWT token');
       this.currentUserId = null;
     }
     
@@ -349,10 +339,6 @@ export default {
           const loadedPosts = await response.json();
           this.posts = loadedPosts;
           
-          console.log('=== Posts Loaded ===');
-          console.log('Total posts:', this.posts.length);
-          console.log('Posts with userIds:', this.posts.map(p => ({ id: p.id, userId: p.userId, user: p.user?.name })));
-          
           // Track user likes
           this.posts.forEach(post => {
           if (post.likes && post.likes.length > 0) {
@@ -375,23 +361,13 @@ export default {
       }
     },
     isOwnPost(userId) {
-      console.log('=== isOwnPost Called ===');
-      console.log('userId received:', userId, 'Type:', typeof userId);
-      console.log('this.currentUserId:', this.currentUserId, 'Type:', typeof this.currentUserId);
-      
       if (!this.currentUserId || !userId) {
-        console.log('One of them is falsy - returning false');
         return false;
       }
       // Convert both to numbers for comparison
       const currentNum = Number(this.currentUserId);
       const postNum = Number(userId);
-      console.log('After Number() conversion:');
-      console.log('currentNum:', currentNum, 'Type:', typeof currentNum);
-      console.log('postNum:', postNum, 'Type:', typeof postNum);
-      const result = currentNum === postNum;
-      console.log('Comparison result:', result);
-      return result;
+      return currentNum === postNum;
     },
     formatDate(dateString) {
       const date = new Date(dateString);
