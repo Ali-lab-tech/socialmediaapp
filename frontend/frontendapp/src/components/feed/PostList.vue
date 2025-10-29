@@ -25,7 +25,7 @@
             <div class="author-avatar">
               <div class="avatar-inner">
                 <i class="fas fa-user"></i>
-              </div>
+            </div>
             </div>
             <div class="author-info">
               <h4 class="author-name">{{ post.user ? post.user.name : 'Unknown User' }}</h4>
@@ -35,13 +35,12 @@
           
           <div class="post-menu">
             <button
-              v-show="userLoaded && isOwnPost(post.userId)"
+              v-if="isOwnPost(post.userId)"
               class="menu-btn"
               type="button"
               @click="handleMenuClick(post.id, $event)"
               :id="'menu-' + post.id"
               title="Options"
-              style="display: flex !important;"
             >
               <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             </button>
@@ -54,11 +53,11 @@
               <button class="menu-item" @click="editPost(post); closeMenu(post.id)">
                 <i class="fas fa-edit"></i>
                 <span>Edit</span>
-              </button>
+                </button>
               <button class="menu-item danger" @click="deletePost(post.id); closeMenu(post.id)">
                 <i class="fas fa-trash"></i>
                 <span>Delete</span>
-              </button>
+                </button>
             </div>
           </div>
         </div>
@@ -138,7 +137,7 @@
               <button class="btn-comment" @click="submitComment(post.id)">
                 <i class="fas fa-paper-plane me-1"></i>Comment
               </button>
-            </div>
+      </div>
             <!-- Mention Suggestions Dropdown -->
             <div 
               v-if="getMentionSuggestions(post.id) && getMentionSuggestions(post.id).length > 0"
@@ -241,11 +240,51 @@ export default {
     };
   },
   async mounted() {
-    // Load user first, wait for it to complete
-    await this.loadCurrentUser();
-    if (this.currentUserId) {
-      this.userLoaded = true;
+    // Load user first - ensure it's a number
+    const userStr = localStorage.getItem('user');
+    console.log('=== MOUNTED - Loading User ===');
+    console.log('userStr from localStorage:', userStr);
+    
+    let userId = null;
+    
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      console.log('Parsed user:', user);
+      console.log('user.id:', user.id, 'Type:', typeof user.id);
+      
+      // Try to get userId from user object
+      userId = user.id || user.userId || user.ID || user.user_id;
     }
+    
+    // If still no userId found, try to extract from JWT token
+    if (!userId) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // JWT token format: header.payload.signature
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = payload.sub; // JWT 'sub' field contains the user ID
+          console.log('Extracted userId from JWT token:', userId);
+        } catch (e) {
+          console.log('Failed to extract userId from token:', e);
+        }
+      }
+    }
+    
+    if (userId) {
+      const numUserId = Number(userId);
+      if (!isNaN(numUserId) && numUserId !== 0) {
+        this.currentUserId = numUserId;
+        console.log('✅ Set currentUserId to:', this.currentUserId, 'Type:', typeof this.currentUserId);
+      } else {
+        console.log('❌ userId is NaN or 0:', numUserId);
+        this.currentUserId = null;
+      }
+    } else {
+      console.log('❌ No userId found in user object or JWT token');
+      this.currentUserId = null;
+    }
+    
     // Then load posts
     await this.loadPosts();
     
@@ -280,28 +319,23 @@ export default {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
-          const user = JSON.parse(userStr);
-          this.currentUserId = Number(user.id);
-          this.userLoaded = true;
-          console.log('✅ User loaded - ID:', this.currentUserId);
+        const user = JSON.parse(userStr);
+          const userId = Number(user.id);
+          // Ensure it's a valid number
+          if (!isNaN(userId) && userId !== 0) {
+            this.currentUserId = userId;
+            this.userLoaded = true;
+          } else {
+            this.currentUserId = null;
+          }
         } catch (error) {
-          console.error('❌ Error parsing user:', error);
           this.currentUserId = null;
         }
       } else {
         this.currentUserId = null;
-        console.warn('⚠️ No user found in localStorage');
       }
     },
     async loadPosts() {
-      // Ensure user is loaded before processing posts
-      if (!this.userLoaded || !this.currentUserId) {
-        await this.loadCurrentUser();
-        if (this.currentUserId) {
-          this.userLoaded = true;
-        }
-      }
-      
       this.loading = true;
       this.error = null;
       try {
@@ -314,6 +348,10 @@ export default {
         if (response.ok) {
           const loadedPosts = await response.json();
           this.posts = loadedPosts;
+          
+          console.log('=== Posts Loaded ===');
+          console.log('Total posts:', this.posts.length);
+          console.log('Posts with userIds:', this.posts.map(p => ({ id: p.id, userId: p.userId, user: p.user?.name })));
           
           // Track user likes
           this.posts.forEach(post => {
@@ -331,45 +369,29 @@ export default {
           this.error = 'Failed to load posts. Please try again.';
         }
       } catch (error) {
-        console.error('Posts loading error:', error);
         this.error = 'Network error. Please check your connection.';
       } finally {
         this.loading = false;
       }
     },
     isOwnPost(userId) {
-      // Always get fresh from localStorage
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        console.log('❌ isOwnPost: No user in localStorage');
+      console.log('=== isOwnPost Called ===');
+      console.log('userId received:', userId, 'Type:', typeof userId);
+      console.log('this.currentUserId:', this.currentUserId, 'Type:', typeof this.currentUserId);
+      
+      if (!this.currentUserId || !userId) {
+        console.log('One of them is falsy - returning false');
         return false;
       }
-      
-      let currentId;
-      try {
-        const user = JSON.parse(userStr);
-        currentId = Number(user.id);
-        // Update component state
-        this.currentUserId = currentId;
-        this.userLoaded = true;
- 
-      } catch (e) {
-      
-        return false;
-      }
-      
-      // Simple validation
-      if (!currentId || !userId) {
-        return false;
-      }
-      
-      // Direct comparison
-      const postUserId = Number(userId);
-      const isOwn = currentId === postUserId;
-      
-     
-      
-      return isOwn;
+      // Convert both to numbers for comparison
+      const currentNum = Number(this.currentUserId);
+      const postNum = Number(userId);
+      console.log('After Number() conversion:');
+      console.log('currentNum:', currentNum, 'Type:', typeof currentNum);
+      console.log('postNum:', postNum, 'Type:', typeof postNum);
+      const result = currentNum === postNum;
+      console.log('Comparison result:', result);
+      return result;
     },
     formatDate(dateString) {
       const date = new Date(dateString);
@@ -449,16 +471,11 @@ export default {
           toastr.error(errorData.message || 'Failed to update post', 'Error');
         }
       } catch (error) {
-        console.error('Post update error:', error);
         // eslint-disable-next-line no-undef
         toastr.error('Network error. Please try again.', 'Error');
       }
     },
     async deletePost(postId) {
-      if (!confirm('Are you sure you want to delete this post?')) {
-        return;
-      }
-
       try {
         const response = await fetch(`http://localhost:3000/feed/posts/${postId}`, {
           method: 'DELETE',
@@ -476,7 +493,6 @@ export default {
           toastr.error('Failed to delete post', 'Error');
         }
       } catch (error) {
-        console.error('Post deletion error:', error);
         // eslint-disable-next-line no-undef
         toastr.error('Network error. Please try again.', 'Error');
       }
@@ -513,7 +529,7 @@ export default {
           this.$set ? this.$set(this.commentsByPost, postId, comments) : (this.commentsByPost[postId] = comments);
         }
       } catch (error) {
-        console.error('Comments load error:', error);
+        // Silently handle error
       }
     },
     async submitComment(postId) {
@@ -546,7 +562,6 @@ export default {
           toastr.error(err.message || 'Failed to add comment', 'Error');
         }
       } catch (error) {
-        console.error('Add comment error:', error);
         // eslint-disable-next-line no-undef
         toastr.error('Network error. Please try again.', 'Error');
       }
@@ -578,7 +593,6 @@ export default {
           toastr.error('Failed to toggle like', 'Error');
         }
       } catch (error) {
-        console.error('Like toggle error:', error);
         // eslint-disable-next-line no-undef
         toastr.error('Network error. Please try again.', 'Error');
       }
@@ -602,7 +616,6 @@ export default {
           toastr.error(errorData.message || 'Failed to share post', 'Error');
         }
       } catch (error) {
-        console.error('Share error:', error);
         // eslint-disable-next-line no-undef
         toastr.error('Network error. Please try again.', 'Error');
       }
@@ -687,8 +700,6 @@ export default {
         const searchQuery = query || '';
         const url = `http://localhost:3000/auth/search?q=${encodeURIComponent(searchQuery)}&limit=5`;
         
-        console.log('Searching users for mention:', query, 'URL:', url);
-        
         const response = await fetch(url, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -697,11 +708,9 @@ export default {
         
         if (response.ok) {
           const users = await response.json();
-          console.log('Received users:', users);
           
           // Filter out current user from suggestions
           const filteredUsers = users.filter(u => u.id !== this.currentUserId);
-          console.log('Filtered users:', filteredUsers, 'for postId:', postId);
           
           // Ensure reactivity in Vue 3 - create new object reference
           this.mentionSuggestions = {
@@ -713,18 +722,11 @@ export default {
             [postId]: 0
           };
           
-          console.log('Updated mentionSuggestions:', this.mentionSuggestions[postId]);
-          console.log('Full mentionSuggestions object:', this.mentionSuggestions);
-          
           // Force Vue to re-render
           this.$forceUpdate();
-        } else {
-          console.error('Search failed:', response.status);
-          const errorText = await response.text();
-          console.error('Error details:', errorText);
         }
       } catch (error) {
-        console.error('User search error:', error);
+        // Silently handle error
       }
     },
     selectMention(postId, user) {
@@ -785,7 +787,7 @@ export default {
         // For now, we'll fetch users as needed from comments/posts
         // This can be optimized later with a batch endpoint
       } catch (error) {
-        console.error('Error loading users:', error);
+        // Silently handle error
       }
     },
     handleMenuClick(postId, event) {
@@ -797,17 +799,13 @@ export default {
       const postIdStr = String(postId);
       const isCurrentlyOpen = this.openMenus[postIdStr] === true;
       
-      console.log('Menu click - postId:', postIdStr, 'currently open:', isCurrentlyOpen);
-      
       // Simply toggle - close if open, open if closed
       if (isCurrentlyOpen) {
         // Close this menu
         this.openMenus = {};
-        console.log('Closing menu');
       } else {
         // Close all others and open this one
         this.openMenus = { [postIdStr]: true };
-        console.log('Opening menu:', this.openMenus);
       }
       
       // Force update to ensure reactivity

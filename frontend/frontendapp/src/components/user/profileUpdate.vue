@@ -185,8 +185,20 @@ export default {
         if (response.ok) {
           const updatedUser = await response.json();
           
-          // Update localStorage with new user data
+          // Update localStorage with new user data (keep existing id if available)
+          const existingUser = localStorage.getItem('user');
+          let existingUserId = null;
+          if (existingUser) {
+            try {
+              const parsed = JSON.parse(existingUser);
+              existingUserId = parsed.id;
+            } catch (e) {
+              // Ignore parse errors
+            }
+          }
+          
           localStorage.setItem('user', JSON.stringify({
+            id: updatedUser.id || existingUserId,
             username: updatedUser.username,
             name: updatedUser.name,
             email: updatedUser.email
