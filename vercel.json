@@ -5,9 +5,7 @@
       "src": "frontend/frontendapp/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "installCommand": "cd frontend/frontendapp && npm install --production=false",
-        "buildCommand": "cd frontend/frontendapp && npm run vercel-build"
+        "distDir": "dist"
       }
     },
     {
@@ -21,11 +19,12 @@
       "dest": "backend/backend-app/api/[...path].ts"
     },
     {
-      "handle": "filesystem"
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot|json|webp))",
+      "dest": "frontend/frontendapp/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/frontendapp/dist/$1"
+      "dest": "frontend/frontendapp/dist/index.html"
     }
   ]
 }
