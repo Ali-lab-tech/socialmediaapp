@@ -4,9 +4,7 @@
     {
       "src": "frontend/frontendapp/package.json",
       "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/frontendapp/dist"
-      }
+      "config": { "distDir": "frontend/frontendapp/dist" }
     },
     {
       "src": "backend/backend-app/api/index.ts",
@@ -14,17 +12,8 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "backend/backend-app/api/index.ts"
-    },
-    {
-      "handle": "filesystem"
-    },
-    
-    {
-      "src": "/(.*)",
-      "dest": "frontend/frontendapp/dist/index.html"
-    }
+    { "src": "/api/(.*)", "dest": "backend/backend-app/api/index.ts" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "frontend/frontendapp/dist/index.html" }
   ]
 }
