@@ -19,8 +19,12 @@
       "dest": "backend/backend-app/api/[...path].ts"
     },
     {
-      "src": "/(.*)",
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot))",
       "dest": "frontend/frontendapp/dist/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/frontendapp/dist/index.html"
     }
   ]
 }
