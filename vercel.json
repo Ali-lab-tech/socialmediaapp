@@ -21,6 +21,7 @@
     {
       "handle": "filesystem"
     },
+    
     {
       "src": "/(.*)",
       "dest": "frontend/frontendapp/dist/index.html"
