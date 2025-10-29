@@ -4,7 +4,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
-import * as express from 'express';
+const express = require('express');
 
 let cachedApp: any;
 
@@ -34,7 +34,7 @@ async function createApp() {
   return expressApp;
 }
 
-export default async function handler(req: express.Request, res: express.Response) {
+export default async function handler(req: any, res: any) {
   // Strip /api prefix from path since Vercel routes /api/* to this function
   // but NestJS routes don't have /api prefix
   if (req.url.startsWith('/api')) {
